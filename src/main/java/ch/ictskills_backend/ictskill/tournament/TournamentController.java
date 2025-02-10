@@ -32,7 +32,8 @@ public class TournamentController {
             tournament.setTitle(updatedTournament.getTitle());
             tournament.setGameId(updatedTournament.getGameId());
             tournament.setSize(updatedTournament.getSize());
-            tournament.setWinnerParticipantId(updatedTournament.getWinnerParticipantId());
+            // Ausblenden, weil es nun eigentlich nur noch der name ist, nicht die ID
+            //tournament.setWinnerParticipantId(updatedTournament.getWinnerParticipantId());
             tournament.setTournamentState(updatedTournament.getTournamentState());
             return ResponseEntity.ok(repository.save(tournament));
         }).orElse(ResponseEntity.notFound().build());
