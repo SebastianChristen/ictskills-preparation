@@ -7,8 +7,10 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -31,7 +33,7 @@ public class TournamentListUI extends Application {
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Tournament List");
 
-        // Table Columns
+        // Tabelle für Turniere
         TableColumn<Tournament, Integer> idColumn = new TableColumn<>("ID");
         idColumn.setCellValueFactory(cellData ->
                 new javafx.beans.property.SimpleIntegerProperty(cellData.getValue().getId()).asObject());
@@ -51,18 +53,23 @@ public class TournamentListUI extends Application {
         tableView.getColumns().addAll(idColumn, titleColumn, sizeColumn, stateColumn);
         tableView.setItems(tournamentList);
 
-        // Refresh Button
+        // Buttons
         Button refreshButton = new Button("Refresh");
         refreshButton.setOnAction(e -> fetchTournaments());
 
-        VBox layout = new VBox(10, tableView, refreshButton);
+        Button addButton = new Button("Hinzufügen");
+        addButton.setOnAction(e -> openCreateTournamentUI());
+
+        HBox buttonBox = new HBox(10, refreshButton, addButton);
+
+        VBox layout = new VBox(10, tableView, buttonBox);
         layout.setPadding(new Insets(20));
 
         Scene scene = new Scene(layout, 600, 400);
         primaryStage.setScene(scene);
         primaryStage.show();
 
-        // Initial Load
+        // Initial Turniere laden
         fetchTournaments();
     }
 
@@ -82,16 +89,26 @@ public class TournamentListUI extends Application {
                 }
                 reader.close();
 
-                // Convert JSON response to Tournament List
+                // JSON in Liste von Turnieren umwandeln
                 Type listType = new TypeToken<List<Tournament>>() {}.getType();
                 List<Tournament> tournaments = new Gson().fromJson(response.toString(), listType);
 
-                // Update JavaFX TableView
+                // JavaFX TableView aktualisieren
                 tournamentList.setAll(tournaments);
             } else {
-                System.out.println("Failed to fetch tournaments: " + conn.getResponseCode());
+                System.out.println("Fehler beim Abrufen der Turniere: " + conn.getResponseCode());
             }
 
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void openCreateTournamentUI() {
+        CreateTournamentUI createTournamentUI = new CreateTournamentUI();
+        Stage createStage = new Stage();
+        try {
+            createTournamentUI.start(createStage);
         } catch (Exception e) {
             e.printStackTrace();
         }
