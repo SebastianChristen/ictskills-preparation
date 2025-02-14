@@ -1,6 +1,7 @@
 package ch.ictskills_backend.ictskill.javafx;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -8,13 +9,16 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.scene.paint.Color;
 import javafx.scene.input.KeyCode;
-import java.util.List;
-import java.util.Arrays;
+import java.util.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.io.OutputStream;
+import java.io.*;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class CreateTournamentUI extends Application {
+    private final Map<String, Integer> gameMap = new HashMap<>(); // Speichert Game-Name -> ID
+
     public static void main(String[] args) {
         launch(args);
     }
@@ -28,7 +32,7 @@ public class CreateTournamentUI extends Application {
 
         Label gameLabel = new Label("Game:");
         ComboBox<String> gameDropdown = new ComboBox<>();
-        gameDropdown.getItems().addAll(fetchGamesFromDatabase()); // Load games dynamically
+        loadGames(gameDropdown); // Lade Spiele aus API
 
         Label sizeLabel = new Label("Size:");
         Spinner<Integer> sizeSpinner = new Spinner<>(2, 100, 16);
@@ -52,21 +56,59 @@ public class CreateTournamentUI extends Application {
         primaryStage.show();
     }
 
-    private List<String> fetchGamesFromDatabase() {
-        // Simulating games fetched from the database
-        return Arrays.asList("Game A", "Game B", "Game C");
+    private void loadGames(ComboBox<String> gameDropdown) {
+        new Thread(() -> {
+            List<String> games = fetchGamesFromAPI();
+            Platform.runLater(() -> gameDropdown.getItems().addAll(games)); // UI-Update auf JavaFX-Thread
+        }).start();
+    }
+
+    private List<String> fetchGamesFromAPI() {
+        List<String> gameNames = new ArrayList<>();
+        try {
+            URL url = new URL("http://localhost:8080/game"); // API für Spiele
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Accept", "application/json");
+
+            if (conn.getResponseCode() == 200) {
+                InputStreamReader reader = new InputStreamReader(conn.getInputStream());
+                BufferedReader br = new BufferedReader(reader);
+                StringBuilder response = new StringBuilder();
+                String line;
+
+                while ((line = br.readLine()) != null) {
+                    response.append(line);
+                }
+
+                JSONArray jsonArray = new JSONArray(response.toString());
+
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    JSONObject game = jsonArray.getJSONObject(i);
+                    int id = game.getInt("id");
+                    String name = game.getString("name");
+                    gameMap.put(name, id); // Speichere ID
+                    gameNames.add(name);
+                }
+            } else {
+                System.out.println("Failed to fetch games, Response Code: " + conn.getResponseCode());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return gameNames;
     }
 
     private void handleCreateTournament(TextField titleField, ComboBox<String> gameDropdown, Spinner<Integer> sizeSpinner, Label errorLabel) {
         String title = titleField.getText().trim();
-        String game = gameDropdown.getValue();
+        String gameName = gameDropdown.getValue();
         int size = sizeSpinner.getValue();
 
         if (title.isEmpty()) {
             errorLabel.setText("Title cannot be empty");
             return;
         }
-        if (game == null) {
+        if (gameName == null) {
             errorLabel.setText("You must select a game");
             return;
         }
@@ -76,10 +118,11 @@ public class CreateTournamentUI extends Application {
         }
 
         errorLabel.setText(""); // Clear error
-        sendTournamentToAPI(title, game, size);
+        int gameId = gameMap.get(gameName); // Hole gameId aus Map
+        sendTournamentToAPI(title, gameId, size);
     }
 
-    private void sendTournamentToAPI(String title, String game, int size) {
+    private void sendTournamentToAPI(String title, int gameId, int size) {
         try {
             URL url = new URL("http://localhost:8080/tournaments"); // API Endpoint
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -89,8 +132,8 @@ public class CreateTournamentUI extends Application {
 
             // Convert data to JSON
             String jsonInputString = String.format(
-                    "{\"title\":\"%s\", \"gameId\": 1, \"size\": %d, \"winnerParticipantId\": 1, \"tournamentState\": 1}",
-                    title, size
+                    "{\"title\":\"%s\", \"gameId\": %d, \"size\": %d, \"winnerParticipantId\": 1, \"tournamentState\": 0}",
+                    title, gameId, size
             );
 
             // Send request

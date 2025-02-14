@@ -1,6 +1,7 @@
 package ch.ictskills_backend.ictskill.tournament;
 
 
+import ch.ictskills_backend.ictskill.game.Game;
 import ch.ictskills_backend.ictskill.participant.Participant;
 import jakarta.persistence.*;
 import lombok.*;
@@ -23,6 +24,10 @@ public class Tournament {
     @ManyToOne
     @JoinColumn(name = "winnerParticipantId", referencedColumnName = "id", insertable = false, updatable = false)
     private Participant winnerParticipant;
+
+    @ManyToOne
+    @JoinColumn(name = "gameId", referencedColumnName = "id", insertable = false, updatable = false)
+    private Game game;
 
     private Integer tournamentState;
 }
