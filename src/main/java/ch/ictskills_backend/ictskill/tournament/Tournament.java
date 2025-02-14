@@ -18,6 +18,7 @@ public class Tournament {
     private String title;
     private Integer gameId;
     private Integer size;
+    private Integer winnerParticipantId; // Direkte Speicherung der ID
 
     @ManyToOne
     @JoinColumn(name = "winnerParticipantId", referencedColumnName = "id", insertable = false, updatable = false)

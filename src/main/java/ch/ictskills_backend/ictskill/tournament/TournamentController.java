@@ -21,7 +21,14 @@ public class TournamentController {
 
     // POST: Create a new tournament
     @PostMapping
-    public Tournament createTournament(@RequestBody Tournament tournament) {
+    public Tournament createTournament(@RequestBody TournamentCreateDTO dto) {
+        Tournament tournament = new Tournament();
+        tournament.setTitle(dto.getTitle());
+        tournament.setGameId(dto.getGameId());
+        tournament.setSize(dto.getSize());
+        tournament.setTournamentState(dto.getTournamentState());
+        tournament.setWinnerParticipantId(dto.getWinnerParticipantId()); // Nur die ID setzen
+
         return repository.save(tournament);
     }
 
@@ -32,8 +39,7 @@ public class TournamentController {
             tournament.setTitle(updatedTournament.getTitle());
             tournament.setGameId(updatedTournament.getGameId());
             tournament.setSize(updatedTournament.getSize());
-            // Ausblenden, weil es nun eigentlich nur noch der name ist, nicht die ID
-            //tournament.setWinnerParticipantId(updatedTournament.getWinnerParticipantId());
+            tournament.setWinnerParticipantId(updatedTournament.getWinnerParticipantId());
             tournament.setTournamentState(updatedTournament.getTournamentState());
             return ResponseEntity.ok(repository.save(tournament));
         }).orElse(ResponseEntity.notFound().build());
